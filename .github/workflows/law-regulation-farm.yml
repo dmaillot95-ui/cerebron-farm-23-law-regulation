@@ -44,7 +44,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install --quiet gradio_client
+      - run: pip install --quiet hf-gradio
       - run: python worker/farm_worker.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -58,15 +58,23 @@ jobs:
     needs: agents
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: law-regulation-*
+          path: omega-input
+          merge-multiple: true
       - run: |
           mkdir -p omega
-          cat > omega/README.txt <<'EOF'
-          CEREBRON OMEGA FARM 23 LAW REGULATION
-          20 external role executions requested.
-          Outputs remain UNREVIEWED_EXTERNAL_AGENT_OUTPUT until source-level legal verification.
-          LEGAL ANALYSIS != LEGAL ADVICE.
-          EOF
+          python - <<'PY'
+          import glob,json
+          rows=[]
+          for p in sorted(glob.glob('omega-input/*.json')):
+              try: rows.append(json.load(open(p,encoding='utf-8')))
+              except Exception as e: rows.append({'file':p,'error':repr(e)})
+          packet={'farm':23,'domain':'law-regulation','roles_received':len(rows),'successful_external_ai_calls':sum(bool(x.get('inference_success')) for x in rows),'failed_external_ai_calls':sum(not bool(x.get('inference_success')) for x in rows),'model_families':sorted(set(x.get('model','') for x in rows if x.get('model'))),'status':'UNREVIEWED_EXTERNAL_AGENT_OUTPUT','legal_analysis_not_legal_advice':True,'results':rows}
+          json.dump(packet,open('omega/omega.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: law-regulation-farm-23-omega-packet
-          path: omega/
+          path: omega/omega.json
