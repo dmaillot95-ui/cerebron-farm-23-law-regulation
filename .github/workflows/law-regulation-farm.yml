@@ -1,0 +1,72 @@
+name: CEREBRON Farm 23 Law Regulation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  agents:
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - { role: LEGAL_SYSTEMS_ARCHITECT, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: REGULATORY_RESEARCHER, model: huggingface-projects/gemma-2-9b-it }
+          - { role: CONTRACT_LAW_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: CORPORATE_LAW_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: COMMERCIAL_LAW_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: IP_PATENT_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: DATA_PRIVACY_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: CYBER_REGULATION_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: PRODUCT_SAFETY_REGULATION_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: ENVIRONMENTAL_REGULATION_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: LABOR_EMPLOYMENT_LAW_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: TAX_REGULATORY_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: COMPETITION_ANTITRUST_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: STANDARDS_CONFORMITY_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: LIABILITY_RISK_ANALYST, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: JURISDICTION_CONFLICT_ANALYST, model: huggingface-projects/gemma-2-9b-it }
+          - { role: LEGAL_SOURCE_AUDITOR, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: REGULATORY_RED_TEAM, model: huggingface-projects/gemma-2-9b-it }
+          - { role: INDEPENDENT_REPLICATOR, model: huggingface-projects/llama-3.2-3B-Instruct }
+          - { role: OMEGA_LAW_REGULATION_JUDGE, model: huggingface-projects/gemma-2-9b-it }
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ROLE: ${{ matrix.role }}
+      MODEL: ${{ matrix.model }}
+      MISSION: "Audit a representative cross-domain regulatory problem. Identify jurisdiction, authority, legal status, version/date, obligations, exceptions, evidence gaps, conflicts, compliance risks, and exact verification needed. Do not invent legal sources."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet gradio_client
+      - run: python worker/farm_worker.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: law-regulation-${{ matrix.role }}
+          path: results/${{ matrix.role }}.json
+          if-no-files-found: ignore
+
+  omega-fusion:
+    if: always()
+    needs: agents
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p omega
+          cat > omega/README.txt <<'EOF'
+          CEREBRON OMEGA FARM 23 LAW REGULATION
+          20 external role executions requested.
+          Outputs remain UNREVIEWED_EXTERNAL_AGENT_OUTPUT until source-level legal verification.
+          LEGAL ANALYSIS != LEGAL ADVICE.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: law-regulation-farm-23-omega-packet
+          path: omega/
